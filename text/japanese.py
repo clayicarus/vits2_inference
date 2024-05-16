@@ -9,6 +9,8 @@ from text import punctuation, symbols
 
 from num2words import num2words
 
+from config import config
+
 import pyopenjtalk
 import jaconv
 
@@ -342,7 +344,7 @@ def handle_long(sep_phonemes):
     return sep_phonemes
 
 
-tokenizer = AutoTokenizer.from_pretrained("./bert/deberta-v2-large-japanese-char-wwm")
+tokenizer = AutoTokenizer.from_pretrained(config.bert_gen_config.languages["JP"]) if "JP" in config.bert_gen_config.languages else None
 
 
 def align_tones(phones, tones):

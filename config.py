@@ -78,11 +78,13 @@ class Bert_gen_config:
         num_processes: int = 2,
         device: str = "cuda",
         use_multi_device: bool = False,
+        languages: dict = {}
     ):
         self.config_path = config_path
         self.num_processes = num_processes
         self.device = device
         self.use_multi_device = use_multi_device
+        self.languages = languages
 
     @classmethod
     def from_dict(cls, dataset_path: str, data: Dict[str, any]):
@@ -156,13 +158,13 @@ class Webui_config:
         debug: bool = False,
     ):
         self.device: str = device
-        self.model: str = model  # 端口号
-        self.config_path: str = config_path  # 是否公开部署，对外网开放
-        self.port: int = port  # 是否开启debug模式
-        self.share: bool = share  # 模型路径
-        self.debug: bool = debug  # 配置文件路径
+        self.model: str = model
+        self.config_path: str = config_path
+        self.port: int = port
+        self.share: bool = share
+        self.debug: bool = debug
         self.language_identification_library: str = (
-            language_identification_library  # 语种识别库
+            language_identification_library
         )
 
     @classmethod
@@ -179,18 +181,6 @@ class Server_config:
         self.models: List[Dict[str, any]] = models  # 需要加载的所有模型的配置
         self.port: int = port  # 端口号
         self.device: str = device  # 模型默认使用设备
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, any]):
-        return cls(**data)
-
-
-class Translate_config:
-    """翻译api配置"""
-
-    def __init__(self, app_key: str, secret_key: str):
-        self.app_key = app_key
-        self.secret_key = secret_key
 
     @classmethod
     def from_dict(cls, data: Dict[str, any]):
@@ -236,13 +226,9 @@ class Config:
             self.server_config: Server_config = Server_config.from_dict(
                 yaml_config["server"]
             )
-            self.translate_config: Translate_config = Translate_config.from_dict(
-                yaml_config["translate"]
-            )
 
 
 parser = argparse.ArgumentParser()
-# 为避免与以前的config.json起冲突，将其更名如下
 parser.add_argument("-y", "--yml_config", type=str, default="config.yml")
 args, _ = parser.parse_known_args()
 config = Config(args.yml_config)

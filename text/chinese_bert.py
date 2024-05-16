@@ -5,12 +5,8 @@ from transformers import AutoModelForMaskedLM, AutoTokenizer
 
 from config import config
 
-LOCAL_PATH = "./bert/chinese-roberta-wwm-ext-large"
-
-tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
-
+tokenizer = AutoTokenizer.from_pretrained(config.bert_gen_config.languages["ZH"]) if "ZH" in config.bert_gen_config.languages else None
 models = dict()
-
 
 def get_bert_feature(
     text,

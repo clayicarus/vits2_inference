@@ -46,6 +46,10 @@ preprocess_text:
 # bert_gen 相关配置
 # 注意， “:” 后需要加空格
 bert_gen:
+  languages: 
+    ZH: "./models/bert/chinese-roberta-wwm-ext-large"
+    # JP: "./models/bert/deberta-v2-large-japanese-char-wwm"
+    # EN: "./models/bert/deberta-v3-large"
   # 训练数据集配置文件路径
   config_path: "config.json"
   # 并行数
@@ -100,7 +104,7 @@ train_ms:
 # 注意， “:” 后需要加空格
 webui:
   # 推理设备
-  device: "cpu"
+  device: "cuda"
   # 模型路径
   model: "models/G_18200.pth"
   # 配置文件路径
@@ -108,7 +112,7 @@ webui:
   # 端口号
   port: 7860
   # 是否公开部署，对外网开放
-  share: false
+  share: True
   # 是否开启debug模式
   debug: false
   # 语种识别库，可选langid, fastlid
@@ -166,12 +170,3 @@ server:
       # 模型人物默认参数
       # 不必填写所有人物，不填的使用默认值
       speakers: [ ] # 也可以不填
-
-# 百度翻译开放平台 api配置
-# api接入文档 https://api.fanyi.baidu.com/doc/21
-# 请不要在github等网站公开分享你的app id 与 key
-translate:
-  # 你的APPID
-  "app_key": ""
-  # 你的密钥
-  "secret_key": ""

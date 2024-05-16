@@ -19,10 +19,8 @@ import torch
 import utils
 from infer import infer, latest_version, get_net_g, infer_multilang
 import gradio as gr
-import webbrowser
 import numpy as np
 from config import config
-from tools.translate import translate
 import librosa
 from infer_utils import BertFeature
 
@@ -36,20 +34,7 @@ if device == "mps":
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 
-bert_feature_map = {
-    "ZH": BertFeature(
-        "./bert/chinese-roberta-wwm-ext-large",
-        language="ZH",
-    ),
-    "JP": BertFeature(
-        "./bert/deberta-v2-large-japanese-char-wwm",
-        language="JP",
-    ),
-    "EN": BertFeature(
-        "./bert/deberta-v3-large",
-        language="EN",
-    ),
-}
+bert_feature_map = { lang: BertFeature(config.bert_gen_config.languages[lang], language=lang) for lang in config.bert_gen_config.languages }
 
 def generate_audio(
     slices,
@@ -97,8 +82,6 @@ def generate_audio_multilang(
     length_scale,
     speaker,
     language,
-    reference_audio,
-    emotion,
     skip_start=False,
     skip_end=False,
 ):
@@ -110,8 +93,6 @@ def generate_audio_multilang(
             skip_end = (idx != len(slices) - 1) and skip_end
             audio = infer_multilang(
                 piece,
-                reference_audio=reference_audio,
-                emotion=emotion,
                 sdp_ratio=sdp_ratio,
                 noise_scale=noise_scale,
                 noise_scale_w=noise_scale_w,
@@ -123,6 +104,7 @@ def generate_audio_multilang(
                 device=device,
                 skip_start=skip_start,
                 skip_end=skip_end,
+                bert=bert_feature_map,
             )
             audio16bit = gr.processing_utils.convert_to_16_bit_wav(audio)
             audio_list.append(audio16bit)
@@ -141,8 +123,6 @@ def tts_split(
     cut_by_sent,
     interval_between_para,
     interval_between_sent,
-    reference_audio,
-    emotion,
 ):
     if language == "mix":
         return ("invalid", None)
@@ -184,8 +164,6 @@ def tts_split(
                 skip_end = (idx != len(sent_list) - 1) and skip_end
                 audio = infer(
                     s,
-                    reference_audio=reference_audio,
-                    emotion=emotion,
                     sdp_ratio=sdp_ratio,
                     noise_scale=noise_scale,
                     noise_scale_w=noise_scale_w,
@@ -197,6 +175,7 @@ def tts_split(
                     device=device,
                     skip_start=skip_start,
                     skip_end=skip_end,
+                    bert=bert_feature_map
                 )
                 audio_list_sent.append(audio)
                 silence = np.zeros((int)(44100 * interval_between_sent))
@@ -348,8 +327,6 @@ def tts_fn(
                         length_scale,
                         speaker,
                         lang_to_generate,
-                        reference_audio,
-                        emotion,
                         skip_start,
                         skip_end,
                     )
@@ -405,7 +382,7 @@ if __name__ == "__main__":
     )
     speaker_ids = hps.data.spk2id
     speakers = list(speaker_ids.keys())
-    languages = ["ZH", "JP", "EN", "mix", "auto"]
+    languages = [lang for lang in config.bert_gen_config.languages] + ["mix", "auto"] if len(config.bert_gen_config.languages) > 0 else []
     with gr.Blocks() as app:
         with gr.Row():
             with gr.Column():
@@ -421,8 +398,6 @@ if __name__ == "__main__":
                     另外，所有的语言选项都可以用'|'分割长段实现分句生成。
                     """,
                 )
-                trans = gr.Button("中翻日", variant="primary")
-                slicer = gr.Button("快速切分", variant="primary")
                 speaker = gr.Dropdown(
                     choices=speakers, value=speakers[0], label="Speaker"
                 )
@@ -458,7 +433,7 @@ if __name__ == "__main__":
                 language = gr.Dropdown(
                     choices=languages, value=languages[0], label="Language"
                 )
-                btn = gr.Button("生成音频！", variant="primary")
+                btn = gr.Button("生成音频", variant="primary")
             with gr.Column():
                 with gr.Row():
                     with gr.Column():
@@ -506,11 +481,6 @@ if __name__ == "__main__":
             outputs=[text_output, audio_output],
         )
 
-        trans.click(
-            translate,
-            inputs=[text],
-            outputs=[text],
-        )
         slicer.click(
             tts_split,
             inputs=[
@@ -524,8 +494,6 @@ if __name__ == "__main__":
                 opt_cut_by_sent,
                 interval_between_para,
                 interval_between_sent,
-                audio_prompt,
-                text_prompt,
             ],
             outputs=[text_output, audio_output],
         )
@@ -542,6 +510,4 @@ if __name__ == "__main__":
             outputs=[audio_prompt],
         )
 
-    print("推理页面已开启!")
-    webbrowser.open(f"http://127.0.0.1:{config.webui_config.port}")
     app.launch(share=config.webui_config.share, server_port=config.webui_config.port)
